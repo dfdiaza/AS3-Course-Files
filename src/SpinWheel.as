@@ -18,6 +18,9 @@
 	import src.pages.utils.*;
 
 
+	import fl.controls.RadioButton;
+	import fl.controls.RadioButtonGroup;
+
 
 	public class SpinWheel extends DynamicPageAPI
 	{
@@ -36,9 +39,7 @@
 		
 		private var FeedSound:Sound = new Sound();		
 		private var FeedSoundChannel:SoundChannel = new SoundChannel();
-		
-		private var SpinSound:Sound = new Sound();
-		private var SpinSoundChannel:SoundChannel = new SoundChannel();
+						
 		
 		
 		
@@ -213,7 +214,8 @@
 			bg_mc.width = presentSizeW;
 			bg_mc.height = presentSizeH;
 			title_bar_mc.width = presentSizeW;
-			title_txt.width = presentSizeW - 10;
+			title_txt.width = presentSizeW - scroll_mc.width - 20;
+			scroll_mc.x = title_txt.x+title_txt.width;
 			score_bar_mc.x = title_bar_mc.width - score_bar_mc.width - 20;
 			score_bar_mc.y = title_bar_mc.height - 4;
 			spin_mc.x = presentSizeW - spin_mc.width - margin;
@@ -274,14 +276,23 @@
 			score_bar_mc.score_title_txt.htmlText = "<b>" + currentPageTag.text[0]. @ score + "</b>";
 
 
+			if (title_txt.maxScrollV > 1)
+			{				
+				scroll_mc.visible = true;				
+			}
+			else
+			{				
+				scroll_mc.visible = false;							
+			}
+
 
 			if (popup_mc.instruction_txt.maxScrollV > 1)
 			{
-				popup_mc.scroll_mc.alpha = 1;
+				popup_mc.scroll_mc.visible = true;
 			}
 			else
 			{
-				popup_mc.scroll_mc.alpha = 0;
+				popup_mc.scroll_mc.visible = false;
 			}
 
 
@@ -431,8 +442,8 @@
 
 			currentSector = NaN;
 			question_mc.visible = true;
-			give_btn.visible = true
-			;
+			give_btn.visible = true;
+			
 			submit_btn.visible = true;
 
 			TweenMax.to(question_mc,0.5,{alpha:1});
@@ -440,27 +451,47 @@
 			TweenMax.to(submit_btn,0.5,{alpha:1});
 			give_btn.mouseEnabled = true;
 			submit_btn.mouseEnabled = true;
-
+			
+			
 
 			question_mc.title_txt.htmlText = "<b>"+currentPageTag.text[0].@question+" "+(played.length)+"</b><br/>"+currentQuestion.question;
+
+			question_mc.scrollq_mc.visible = (question_mc.title_txt.maxScrollV > 1) ? true : false;
+			question_mc.scrollq_mc.x = question_mc.title_txt.x+question_mc.title_txt.width;
+			question_mc.scrollq_mc.scrollTarget = question_mc.title_txt;
+			question_mc.scrollq_mc.update();
 
 			var i:Number,j:Number;
 			for (i=0; i<4; i++)
 			{
-				question_mc["option" + i].selected = false;
+				
+				question_mc["option" + i].selected = false;				
 				question_mc["option" + i].visible = false;
-				question_mc["option" + i + "_txt"].visible = false;
+				question_mc["option" + i + "_txt"].visible = false;								
+				question_mc["scroll" + i+"_mc"].visible = false;
 			}
+			
+			// Deselecting the radioButton						
+			var t = new RadioButton();//dummy. No need to add it to the display list
+			t.group = question_mc["option" + 0].group;			
+			t.selected = true;
+			
+			
+			
 			for (i=0,j=0; i<currentQuestion.option.length; i++)
-			{
-				
-				
+			{								
 				if (currentQuestion.option[i].text != undefined && currentQuestion.option[i].text !="")
 				{					
-					question_mc["option" + j].selected = false;					
+					question_mc["option"+j].value = currentQuestion.option[i].correct+"#"+i;					
 					question_mc["option" + j].visible = true;
 					question_mc["option" + j + "_txt"].visible = true;
 					question_mc["option" + j + "_txt"].htmlText = "<b>" + currentQuestion.option[i].text + "</b>";
+					
+					question_mc["scroll" + j + "_mc"].scrollTarget = question_mc["option" + j + "_txt"];
+					question_mc["scroll" + j + "_mc"].visible = question_mc["option" + j + "_txt"].maxScrollV > 1 ? true:false;
+					question_mc["scroll" + j + "_mc"].x = (question_mc["option"+i+"_txt"].x+question_mc["option"+i+"_txt"].width)					
+					question_mc["scroll" + j + "_mc"].update();
+					
 					j++;
 				}
 			}
@@ -600,11 +631,11 @@
 
 			if (feedback_mc.data_txt.maxScrollV > 1)
 			{
-				feedback_mc.scroll_mc.alpha = 1;
+				feedback_mc.scroll_mc.visible = true;
 			}
 			else
 			{
-				feedback_mc.scroll_mc.alpha = 0;
+				feedback_mc.scroll_mc.visible = false;
 			}
 
 			feedback_mc.continue_btn.title_txt.htmlText = "<b>" + currentPageTag.btn[0]. @ continue_btn + "</b>";
@@ -729,10 +760,14 @@
 		{
 			if (number != currentSector && number != -1)
 			{								
-				SpinSoundChannel = doSound(currentPageTag.configuration[0].@spin,SpinSound);								
+			
+				trace("SOUND "+currentPageTag.configuration[0].spin_sound);					
+				if(currentPageTag.configuration[0].@spin_sound == "true")
+				{
+						sound_spin.gotoAndPlay(2)
+				}														
 				currentSector = number;												
 			}
-			
 			
 
 
@@ -859,7 +894,7 @@
 						obj.seen = false;
 						obj.image = currentPageTag.category[i].question[j].@image;
 						obj.audio = currentPageTag.category[i].question[j].@audio;
-						obj.position = currentPageTag.category[i].question[j].@position;
+																		
 
 						for (var k = 0; k < currentPageTag.category[i].question[j].option.length(); k++)
 						{
@@ -942,7 +977,9 @@
 			var has = false;
 			for (var k = 0; k < _question.option.length(); k++)
 			{
-				if (_question.option[k] != undefined)
+				trace(_question.option[k].text()+" > "+k+" > "+_question.option)
+				
+				if (_question.option[k].text() != undefined)
 				{
 					has = true;
 					break;
@@ -1006,35 +1043,39 @@
 		function doSubmit(_ref:MovieClip)
 		{
 
-			countdownInterval.stop();
+			countdownInterval.stop();			
+			
 			for (var i=0; i<currentQuestion.option.length; i++)
 			{
 				if (question_mc["option" + i].selected == true)
-				{
-										
+				{			
 					
-					currentQuestion.option[i].selected = true;
-					if (currentQuestion.option[i].correct == true)
-					{
+					var arr = question_mc["option"+i].value.split("#");
+					var value = arr[0];
+					var index = arr[1];				
+					currentQuestion.option[index].selected = true;										
+					
+					if (value == "true")
+					{						
 						score +=  points;
 						score_bar_mc.score_txt.htmlText = "<b>" + score + " of " + posScore + "</b>";
 						currentQuestion.correct = true;
 					}
 				}
-			}
+			}							
+			
 
 			currentQuestion.time_spent = count;
 
-			feedback_mc.visible = true;
-					
+			feedback_mc.visible = true;			
+			
 			if ((currentQuestion.image[0] == "" || currentQuestion.image[0] == undefined))
-			{
+			{				
 				feedback_mc.gotoAndStop("no_image");
 			}
 			else
-			{								
-							
-				feedback_mc.gotoAndStop(currentQuestion.position[0]);
+			{												
+				feedback_mc.gotoAndStop("left");
 
 				
 				
@@ -1048,17 +1089,16 @@
 				
 				feedback_mc.img_mc.visible = true;
 				feedback_mc.border_mc.visible = true;
-				feedback_mc.maskimg_mc.visible = true;
+				feedback_mc.maskimg_mc.visible = true;				
 			}
-
-		
+			
 			if (currentQuestion.audio[0] != "" && currentQuestion.audio[0] != undefined)
 			{								
 				FeedSoundChannel.stop();			
 				FeedSoundChannel = doSound(currentQuestion.audio[0],FeedSound);
 			}
 			
-	
+
 
 			
 			feedback_mc.x = presentSizeW * 3 / 2;
@@ -1140,7 +1180,7 @@
 			separator_mc.title_txt.x = margin;
 			review_btn.x = presentSizeW - review_btn.width - margin;
 			review_btn.y = presentSizeH - review_btn.height - margin;
-			question_txt.width = presentSizeW - 30;
+			question_txt.width = presentSizeW - 30-question_txt.x;
 
 			score_bar_mc.x = title_bar_mc.width - score_bar_mc.width - 20;
 			score_bar_mc.y = title_bar_mc.height - 4;
@@ -1182,6 +1222,9 @@
 				your_answer_mc["option" + i].mouseEnabled = false;
 				correct_answer_mc["option" + i].mouseEnabled = false;
 
+				your_answer_mc["scroll" +i+"_mc"].visible = false;
+				correct_answer_mc["scroll" + i+"_mc"].visible = false;
+
 				your_answer_mc["option" + i].visible = false;
 				correct_answer_mc["option" + i].visible = false;
 				your_answer_mc["option" + i + "_txt"].visible = false;
@@ -1198,21 +1241,31 @@
 
 			if (separator_mc.title_txt.maxScrollV > 1)
 			{
-				separator_mc.scroll_mc.alpha = 1;
+				separator_mc.scroll_mc.visible = 1;
 			}
 			else
 			{
-				separator_mc.scroll_mc.alpha = 0;
+				separator_mc.scroll_mc.visible = 0;
 			}
 
 			separator_mc.scroll_mc.x = separator_mc.title_txt.x + separator_mc.title_txt.width;
 
-			question_txt.htmlText = played[currentIndex].question;
+			question_txt.htmlText = played[currentIndex].question;			
+			scrollq_mc.x = question_txt.x+question_txt.width;
+			scrollq_mc.visible = (question_txt.maxScrollV > 1) ? true : false;
+			scrollq_mc.scrollTarget = question_txt;				
+			scrollq_mc.update();
+			
+			
+			
+			
+			
 			for (i=0, j=0; i<played[currentIndex].option.length; i++)
 			{
-
-				if (played[currentIndex].option[i].text != undefined)
+				trace(" OPTION: >> "+played[currentIndex].option.length+" > "+currentIndex)
+				if (played[currentIndex].option[i].text != undefined && played[currentIndex].option[i].text != "")
 				{
+					
 					your_answer_mc["option" + j + "_txt"].visible = true;
 					correct_answer_mc["option" + j + "_txt"].visible = true;
 
@@ -1241,15 +1294,62 @@
 					{
 						correct_answer_mc["option" + j].selected = false;
 					}
+					
+					your_answer_mc["scroll" + j+"_mc"].scrollTarget = your_answer_mc["option" + j + "_txt"]
+					correct_answer_mc["scroll" + j+"_mc"].scrollTarget = correct_answer_mc["option" + j + "_txt"];										
+					
+					your_answer_mc["scroll" + j+"_mc"].visible =  (your_answer_mc["option" + j + "_txt"].maxScrollV > 1)?true:false;
+					correct_answer_mc["scroll" + j+"_mc"].visible =  (correct_answer_mc["option" + j + "_txt"].maxScrollV > 1)?true:false;
+					
+					your_answer_mc["scroll" + j+"_mc"].update();
+					correct_answer_mc["scroll" + j+"_mc"].update();
+					
 					j++;
 				}
 			}
+			//framesElapsed = 0
+			//addEventListener(Event.ENTER_FRAME,showOrHideScrollbars);			
 		}
 		
 		
 		
+		//=======================================================================
+		// UIScrollBar needs 2 frames before it calculates if scrolling is needed
+		// wait 2 frames before checking for scrollThumb_mc
+		var framesElapsed:Number = 0;
+		var framesToWait:Number = 2;
+		
+		function showOrHideScrollbars(evt:Event):void {
+			trace("showOrHideScrollbars() "+scrollq_mc);
+			framesElapsed++;
+			if (framesElapsed == framesToWait) {
+				removeEventListener(Event.ENTER_FRAME,showOrHideScrollbars);			
+				
+				for(var i=0;i<4;i++)
+				{
+					/*
+					var myScrollbar = your_answer_mc["scroll"+i+"_mc"];			
+					myScrollbar._visible = (your_answer_mc["option"+i+"_txt"].maxscroll > 1) ? true : false;
+								
+					var myScrollbar = correct_answer_mc["scroll"+i+"_mc"];			
+					myScrollbar._visible = (correct_answer_mc["option"+i+"_txt"].maxscroll > 1) ? true : false;
+					*/
+				}
+				scrollq_mc.scrollTarget = question_txt;
+				trace("T:: "+scrollq_mc.scrollTarget);
+				scrollq_mc.update();
+				
+			}
+		}
+		//
+		//=========================================================================
+		
+				
+		
 		private function doSound(audio_path, _snd)
 		{						
+			trace("Audio Path "+audio_path)
+		
 			if (audio_path != null && audio_path != "")
 			{
 				_snd = new Sound();
